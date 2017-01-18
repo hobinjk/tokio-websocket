@@ -1,0 +1,8 @@
+[package]
+name = "websocket"
+version = "0.1.0"
+authors = ["mozilla <hobinjk@mit.edu>"]
+
+[dependencies]
+tokio-core = "0.1"
+byteorder = "1.0"
