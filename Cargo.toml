@@ -4,5 +4,11 @@ version = "0.1.0"
 authors = ["mozilla <hobinjk@mit.edu>"]
 
 [dependencies]
-tokio-core = "0.1"
+base64 = "0.4"
 byteorder = "1.0"
+futures = "0.1"
+ring = { git = "https://github.com/briansmith/ring/" }
+tokio-core = "0.1"
+tokio-minihttp = { git = "https://github.com/tokio-rs/tokio-minihttp" }
+tokio-proto = "0.1"
+tokio-service = "0.1"
