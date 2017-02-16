@@ -2,11 +2,11 @@ use base64;
 use byteorder::{BigEndian, ByteOrder};
 use tokio_minihttp;
 use ring::digest;
-use ws_frame::{Frame, Header, opcode_to_u8};
+use ws_frame::{Frame, opcode_to_u8};
 
 #[cfg(test)]
 mod tests {
-    use ws_frame::Opcode;
+    use ws_frame::{Opcode, Header};
 
     use super::*;
 
