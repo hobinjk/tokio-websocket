@@ -15,10 +15,11 @@ use tokio_core::reactor::Core;
 use tokio_core::io::Io;
 
 use futures::{Future, Stream, Sink};
-use futures::{stream, future};
 use futures::sync::mpsc;
 
 use websocket::{Request, WebSocketCodec, new_text_frame, Opcode, Frame};
+
+const NULL_PAYLOAD: &'static Value = &Value::Null;
 
 enum Message {
     Echo(Frame),
@@ -39,7 +40,8 @@ fn process_frame(frame: Frame) -> Message {
                 return Message::Echo(frame);
             }
             if s == "broadcast" {
-                return Message::Broadcast(frame, new_text_frame("blub"));
+                let msg = format!(r#"{{"type":"broadcastResult","listenCount":{},"payload":{}}}"#, 0, obj.get("payload").unwrap_or(NULL_PAYLOAD));
+                return Message::Broadcast(frame, new_text_frame(&msg));
             }
         }
     }
