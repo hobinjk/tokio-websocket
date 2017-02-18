@@ -17,7 +17,7 @@ mod ws_response;
 
 pub use ws_request::{Request, decode};
 pub use ws_response::{Response, encode};
-pub use ws_frame::new_text_frame;
+pub use ws_frame::{new_text_frame, Opcode, Frame};
 
 pub struct WebSocket;
 
@@ -46,12 +46,20 @@ pub struct WebSocketCodec {
     http_codec: HttpCodec,
 }
 
+impl WebSocketCodec {
+    pub fn new() -> WebSocketCodec {
+        WebSocketCodec {
+            state: WebSocketState::Http(),
+            http_codec: HttpCodec,
+        }
+    }
+}
+
 impl Codec for WebSocketCodec {
     type In = Request;
     type Out = Response;
 
     fn decode(&mut self, buf: &mut EasyBuf) -> io::Result<Option<Request>> {
-        println!("decode");
         match self.state {
             WebSocketState::Http() => {
                 let req = self.http_codec.decode(buf);
@@ -75,10 +83,8 @@ impl Codec for WebSocketCodec {
     }
 
     fn encode(&mut self, msg: Response, buf: &mut Vec<u8>) -> io::Result<()> {
-        println!("encode");
         self.state = match self.state {
             WebSocketState::Http() => {
-                println!("uhhhh");
                 return Err(io::Error::new(io::ErrorKind::Other, "pls no"));
             }
             WebSocketState::Upgrade(ref key) => {
