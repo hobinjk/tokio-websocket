@@ -1,11 +1,11 @@
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Frame {
     pub header: Header,
     pub payload: Vec<u8>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Opcode {
     Continuation,
     Text,
@@ -15,7 +15,7 @@ pub enum Opcode {
     Pong,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Header {
     pub is_final: bool,
     pub opcode: Opcode,
