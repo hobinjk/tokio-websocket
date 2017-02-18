@@ -21,6 +21,7 @@ pub use ws_frame::{new_text_frame, Opcode, Frame};
 
 pub struct WebSocket;
 
+#[derive(Debug)]
 enum WebSocketState {
     Http(),
     Upgrade(String),
