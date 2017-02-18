@@ -172,7 +172,6 @@ pub fn decode(buf: &mut EasyBuf) -> io::Result<Option<Request>> {
         ParseResult::Complete(h, offset) => (h, offset),
         ParseResult::Partial => return Ok(None),
     };
-    println!("header: {:?}", header);
     if header.payload_len + offset > buf.len() {
         return Ok(None);
     }
