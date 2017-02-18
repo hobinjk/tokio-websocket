@@ -1,3 +1,4 @@
+use std::string;
 
 #[derive(Debug, Clone)]
 pub struct Frame {
@@ -22,6 +23,28 @@ pub struct Header {
     pub is_masked: bool,
     pub payload_len: usize,
     pub masking_key: u32,
+}
+
+impl Frame {
+    pub fn payload_string(&self) -> Result<String, string::FromUtf8Error> {
+        if !self.header.is_masked {
+            return String::from_utf8(self.payload.clone())
+        }
+        let mut i = 0;
+        let masking_keys = [
+            ((self.header.masking_key & 0xff000000) >> 24) as u8,
+            ((self.header.masking_key & 0x00ff0000) >> 16) as u8,
+            ((self.header.masking_key & 0x0000ff00) >> 8) as u8,
+            (self.header.masking_key & 0x000000ff) as u8,
+        ];
+        let mut unmasked = Vec::new();
+        unmasked.reserve(self.payload.len());
+        for b in self.payload.iter() {
+            unmasked.push(b ^ masking_keys[i]);
+            i = (i + 1) % 4;
+        }
+        String::from_utf8(unmasked)
+    }
 }
 
 pub fn opcode_to_u8(opcode: Opcode) -> u8 {
