@@ -86,17 +86,16 @@ fn main() {
                 },
                 Request::Open() => {
                     let tx = conns.get_mut(&addr).unwrap();
-                    tx.send(new_text_frame("this message is dropped")).wait().unwrap();
+                    mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), new_text_frame("this message is dropped")).unwrap();
                 }
             }
             Ok(())
         });
         let connections = connections.clone();
-        let writer = sink.send_all(rx.map_err(|_| Error::new(ErrorKind::Other, "shit")).map(|a| {
-            println!("FROM THE SINK: {:?}", a.clone().payload_string());
-            a
-        }));
-        let reader = reader.map_err(|_| Error::new(ErrorKind::Other, "pls"));
+        let writer = rx.map_err(|_| Error::new(ErrorKind::Other, "receiver error")).fold(sink, |sink, msg| {
+            sink.send(msg)
+        });
+        let reader = reader.map_err(|_| Error::new(ErrorKind::Other, "transmitter error"));
         let conn = reader.map(|_| ()).select(writer.map(|_| ()));
         handle.spawn(conn.then(move |_| {
             connections.borrow_mut().remove(&addr);
