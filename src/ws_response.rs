@@ -153,6 +153,8 @@ pub type Response = Frame;
 pub fn encode(msg: Response, buf: &mut Vec<u8>) {
     let mut len = 2;
     buf.resize(len, 0u8);
+    buf[0] = 0;
+    buf[1] = 0;
     if msg.header.is_final {
         buf[0] |= 0x80;
     }
