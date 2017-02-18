@@ -76,7 +76,6 @@ fn main() {
                         },
                         Message::Broadcast(broadcast_frame, echo_frame) => {
                             for (&t_addr, tx) in conns.iter_mut() {
-                                println!("sending and suchlike {} ?= {}", t_addr, addr);
                                 if addr == t_addr {
                                     mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), echo_frame.clone()).unwrap();
                                 }
