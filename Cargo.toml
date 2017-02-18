@@ -8,6 +8,7 @@ base64 = "0.4"
 byteorder = "1.0"
 futures = "0.1"
 ring = { git = "https://github.com/briansmith/ring/" }
+serde_json = "0.9"
 tokio-core = "0.1"
 tokio-minihttp = { git = "https://github.com/tokio-rs/tokio-minihttp" }
 tokio-proto = "0.1"
