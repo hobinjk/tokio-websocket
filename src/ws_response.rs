@@ -6,7 +6,7 @@ use ws_frame::{Frame, opcode_to_u8};
 
 #[cfg(test)]
 mod tests {
-    use ws_frame::{Opcode, Header};
+    use ws_frame::{Opcode, Header, new_text_frame};
 
     use super::*;
 
@@ -130,6 +130,20 @@ mod tests {
         let mut buf = Vec::new();
         encode(frame, &mut buf);
 
+        assert_eq!(buf, expected_data);
+    }
+
+    #[test]
+    fn tiny_text_frame() {
+        let text = "blub";
+        let mut expected_data = vec![
+            0x81u8,
+            0x04u8
+        ];
+        expected_data.extend(text.as_bytes());
+        let ttf = new_text_frame(text);
+        let mut buf = Vec::new();
+        encode(ttf, &mut buf);
         assert_eq!(buf, expected_data);
     }
 }
