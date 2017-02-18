@@ -35,10 +35,7 @@ impl<T: Io + 'static> ServerProto<T> for WebSocket {
     type BindTransport = io::Result<Framed<T, WebSocketCodec>>;
 
     fn bind_transport(&self, io: T) -> io::Result<Framed<T, WebSocketCodec>> {
-        Ok(io.framed(WebSocketCodec {
-            state: WebSocketState::Http(),
-            http_codec: HttpCodec,
-        }))
+        Ok(io.framed(WebSocketCodec::new()))
     }
 }
 
