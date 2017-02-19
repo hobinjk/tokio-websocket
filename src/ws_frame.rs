@@ -30,21 +30,25 @@ impl Frame {
         if !self.header.is_masked {
             return String::from_utf8(self.payload.clone())
         }
-        let mut i = 0;
-        let masking_keys = [
-            ((self.header.masking_key & 0xff000000) >> 24) as u8,
-            ((self.header.masking_key & 0x00ff0000) >> 16) as u8,
-            ((self.header.masking_key & 0x0000ff00) >> 8) as u8,
-            (self.header.masking_key & 0x000000ff) as u8,
-        ];
-        let mut unmasked = Vec::new();
-        unmasked.reserve(self.payload.len());
-        for b in self.payload.iter() {
-            unmasked.push(b ^ masking_keys[i]);
-            i = (i + 1) % 4;
-        }
-        String::from_utf8(unmasked)
+        String::from_utf8(mask_bytes(self.header.masking_key, &self.payload))
     }
+}
+
+fn mask_bytes(masking_key: u32, bytes: &[u8]) -> Vec<u8> {
+    let mut i = 0;
+    let masking_keys = [
+        ((masking_key & 0xff000000) >> 24) as u8,
+        ((masking_key & 0x00ff0000) >> 16) as u8,
+        ((masking_key & 0x0000ff00) >> 8) as u8,
+        (masking_key & 0x000000ff) as u8,
+    ];
+    let mut masked = Vec::new();
+    masked.reserve(bytes.len());
+    for b in bytes.iter() {
+        masked.push(b ^ masking_keys[i]);
+        i = (i + 1) % 4;
+    }
+    masked
 }
 
 pub fn opcode_to_u8(opcode: Opcode) -> u8 {
@@ -70,15 +74,20 @@ pub fn u8_to_opcode(bits: u8) -> Option<Opcode> {
     }
 }
 
-pub fn new_text_frame(text: &str) -> Frame {
+pub fn new_text_frame(text: &str, masking_key: Option<u32>) -> Frame {
+    let masked_text = match masking_key {
+        Some(masking_key) => mask_bytes(masking_key, text.as_bytes()),
+        None => text.as_bytes().to_vec(),
+    };
+
     Frame {
         header: Header {
             is_final: true,
             opcode: Opcode::Text,
-            is_masked: false,
+            is_masked: masking_key.is_some(),
             payload_len: text.len(),
-            masking_key: 0,
+            masking_key: masking_key.unwrap_or(0),
         },
-        payload: text.as_bytes().to_vec(),
+        payload: masked_text,
     }
 }

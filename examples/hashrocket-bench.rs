@@ -44,7 +44,7 @@ fn process_frame(frame: Frame) -> Message {
             }
             if s == "broadcast" {
                 let msg = format!(r#"{{"type":"broadcastResult","payload":{}}}"#, obj.get("payload").unwrap_or(NULL_PAYLOAD));
-                return Message::Broadcast(frame, new_text_frame(&msg));
+                return Message::Broadcast(frame, new_text_frame(&msg, None));
             }
         }
     }
@@ -81,11 +81,13 @@ fn main() {
                                 return Err(Error::new(ErrorKind::Other, "close requested"))
                             }
                             let tx = conns.get_mut(&addr).unwrap();
-                            mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), frame).unwrap();
+                            let masked_frame = new_text_frame(&frame.payload_string().unwrap(), None);
+                            mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), masked_frame).unwrap();
                         },
                         Message::Broadcast(broadcast_frame, echo_frame) => {
+                            let masked_frame = new_text_frame(&broadcast_frame.payload_string().unwrap(), None);
                             for (&t_addr, tx) in conns.iter_mut() {
-                                mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), broadcast_frame.clone()).unwrap();
+                                mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), masked_frame.clone()).unwrap();
                                 if addr == t_addr {
                                     mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), echo_frame.clone()).unwrap();
                                 }
@@ -95,7 +97,7 @@ fn main() {
                 },
                 Request::Open() => {
                     let tx = conns.get_mut(&addr).unwrap();
-                    mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), new_text_frame("this message is dropped")).unwrap();
+                    mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), new_text_frame("this message is dropped", None)).unwrap();
                 }
             }
             Ok(())

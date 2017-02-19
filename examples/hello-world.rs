@@ -22,11 +22,11 @@ impl Service for HelloWorld {
         match request {
             Request::Open() => {
                 // This gets dropped, should signal that
-                let res = new_text_frame("Hello world!");
+                let res = new_text_frame("Hello world!", None);
                 future::ok(res)
             },
             Request::Frame(_) => {
-                let res = new_text_frame("Hello world!");
+                let res = new_text_frame("Hello world!", None);
                 future::ok(res)
             },
         }

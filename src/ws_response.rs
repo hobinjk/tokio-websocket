@@ -141,10 +141,26 @@ mod tests {
             0x04u8
         ];
         expected_data.extend(text.as_bytes());
-        let ttf = new_text_frame(text);
+        let ttf = new_text_frame(text, None);
         let mut buf = Vec::new();
         encode(ttf, &mut buf);
         assert_eq!(buf, expected_data);
+    }
+
+    #[test]
+    fn tiny_text_frame_masked() {
+        let text = "blub";
+        let expected_start = [
+            0x81u8,
+            0x84u8
+        ];
+        let ttf = new_text_frame(text, Some(0x11121314));
+        assert_eq!(ttf.clone().payload_string().unwrap(), text);
+        let mut buf = Vec::new();
+        encode(ttf, &mut buf);
+
+        assert_eq!(buf[0], expected_start[0]);
+        assert_eq!(buf[1], expected_start[1]);
     }
 }
 
