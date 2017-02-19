@@ -43,7 +43,7 @@ fn process_frame(frame: Frame) -> Message {
                 return Message::Echo(frame);
             }
             if s == "broadcast" {
-                let msg = format!(r#"{{"type":"broadcastResult","listenCount":{},"payload":{}}}"#, 0, obj.get("payload").unwrap_or(NULL_PAYLOAD));
+                let msg = format!(r#"{{"type":"broadcastResult","payload":{}}}"#, obj.get("payload").unwrap_or(NULL_PAYLOAD));
                 return Message::Broadcast(frame, new_text_frame(&msg));
             }
         }
