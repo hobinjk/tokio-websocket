@@ -1,7 +1,7 @@
 [package]
 name = "websocket"
 version = "0.1.0"
-authors = ["mozilla <hobinjk@mit.edu>"]
+authors = ["hobinjk <hobinjk@mit.edu>"]
 
 [dependencies]
 base64 = "0.4"
