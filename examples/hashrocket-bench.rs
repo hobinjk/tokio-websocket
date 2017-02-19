@@ -85,10 +85,10 @@ fn main() {
                         },
                         Message::Broadcast(broadcast_frame, echo_frame) => {
                             for (&t_addr, tx) in conns.iter_mut() {
+                                mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), broadcast_frame.clone()).unwrap();
                                 if addr == t_addr {
                                     mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), echo_frame.clone()).unwrap();
                                 }
-                                mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), broadcast_frame.clone()).unwrap();
                             }
                         },
                     }
