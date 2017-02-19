@@ -76,6 +76,10 @@ fn main() {
                     match process_frame(frame) {
                         Message::None() => {},
                         Message::Echo(frame) => {
+                            if frame.header.opcode == Opcode::Close {
+                                conns.remove(&addr);
+                                return Err(Error::new(ErrorKind::Other, "close requested"))
+                            }
                             let tx = conns.get_mut(&addr).unwrap();
                             mpsc::UnboundedSender::send(&mut std::borrow::BorrowMut::borrow_mut(tx), frame).unwrap();
                         },
