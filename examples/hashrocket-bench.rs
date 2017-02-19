@@ -28,6 +28,9 @@ enum Message {
 }
 
 fn process_frame(frame: Frame) -> Message {
+    if frame.header.opcode == Opcode::Close {
+        return Message::Echo(frame);
+    }
     if frame.header.opcode != Opcode::Text {
         return Message::None();
     }
