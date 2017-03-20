@@ -1,5 +1,6 @@
 extern crate futures;
 extern crate tokio_core;
+extern crate tokio_io;
 extern crate websocket;
 extern crate serde_json;
 
@@ -12,7 +13,7 @@ use std::io::{Error, ErrorKind};
 
 use tokio_core::net::TcpListener;
 use tokio_core::reactor::Core;
-use tokio_core::io::Io;
+use tokio_io::AsyncRead;
 
 use futures::{Future, Stream, Sink};
 use futures::sync::mpsc;

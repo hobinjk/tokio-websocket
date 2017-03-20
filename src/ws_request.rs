@@ -1,8 +1,6 @@
 use std::io;
 
-use byteorder::{BigEndian, ByteOrder};
-
-use tokio_core::io::EasyBuf;
+use bytes::{BytesMut, BigEndian, ByteOrder};
 
 use ws_frame::{Frame, Header, u8_to_opcode};
 
@@ -10,7 +8,6 @@ use ws_frame::{Frame, Header, u8_to_opcode};
 mod tests {
     extern crate tokio_core;
 
-    use tokio_core::io::EasyBuf;
     use ws_frame::Opcode;
     use super::*;
 
@@ -21,7 +18,7 @@ mod tests {
             0x80u8 + 0x02u8, // fin bin
             0x00u8 + 0x00u8, // unmasked empty
         ];
-        let mut buf = EasyBuf::from(data);
+        let mut buf = BytesMut::from(data);
         let req = match decode(&mut buf) {
             Ok(Some(Request::Frame(req))) => req,
             _ => panic!("decode failed"),
@@ -42,7 +39,7 @@ mod tests {
                         3u8,
                         4u8,
                         5u8];
-        let mut buf = EasyBuf::from(data);
+        let mut buf = BytesMut::from(data);
         let req = match decode(&mut buf) {
             Ok(Some(Request::Frame(req))) => req,
             _ => panic!("decode failed"),
@@ -66,7 +63,7 @@ mod tests {
                             0x14];
         let payload = [5u8; 256]; // length 0x100
         data.extend(payload.iter());
-        let mut buf = EasyBuf::from(data);
+        let mut buf = BytesMut::from(data);
         let req = match decode(&mut buf) {
             Ok(Some(Request::Frame(req))) => req,
             e => panic!("decode failed: {:?}", e),
@@ -99,7 +96,7 @@ mod tests {
                             0x14];
         let payload = [5u8; 65536]; // length 0x10000
         data.extend(payload.iter());
-        let mut buf = EasyBuf::from(data);
+        let mut buf = BytesMut::from(data);
         let req = match decode(&mut buf) {
             Ok(Some(Request::Frame(req))) => req,
             e => panic!("decode failed: {:?}", e),
@@ -126,11 +123,10 @@ enum ParseResult<T> {
     Partial,
 }
 
-fn parse_header(easy_buf: &mut EasyBuf) -> io::Result<ParseResult<Header>> {
-    if easy_buf.len() < 2 {
+fn parse_header(buf: &mut BytesMut) -> io::Result<ParseResult<Header>> {
+    if buf.len() < 2 {
         return Ok(ParseResult::Partial);
     }
-    let buf = easy_buf.as_slice();
     let is_final = buf[0] & 0x80 > 0;
     let opcode = match u8_to_opcode(buf[0] & 0x0f) {
         Some(op) => op,
@@ -165,7 +161,7 @@ fn parse_header(easy_buf: &mut EasyBuf) -> io::Result<ParseResult<Header>> {
                              buf_offset))
 }
 
-pub fn decode(buf: &mut EasyBuf) -> io::Result<Option<Request>> {
+pub fn decode(buf: &mut BytesMut) -> io::Result<Option<Request>> {
     // This is after the successful upgrade
     // Parse header
     let (header, offset) = match try!(parse_header(buf)) {
@@ -176,8 +172,8 @@ pub fn decode(buf: &mut EasyBuf) -> io::Result<Option<Request>> {
         return Ok(None);
     }
     // Discard header data
-    buf.drain_to(offset);
-    let payload = buf.drain_to(header.payload_len).as_slice().to_vec();
+    buf.split_to(offset);
+    let payload = buf.split_to(header.payload_len).to_vec();
 
     Ok(Some(Request::Frame(Frame {
         header: header,

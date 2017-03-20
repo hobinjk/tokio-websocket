@@ -1,13 +1,16 @@
 extern crate base64;
-extern crate byteorder;
+extern crate bytes;
 extern crate ring;
 extern crate tokio_core;
+extern crate tokio_io;
 extern crate tokio_minihttp;
 extern crate tokio_proto;
 extern crate tokio_service;
 
 use std::io;
-use tokio_core::io::{Codec, EasyBuf, Framed, Io};
+use bytes::BytesMut;
+use tokio_io::codec::{Encoder, Decoder, Framed};
+use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_proto::pipeline::ServerProto;
 use tokio_minihttp::HttpCodec;
 
@@ -28,7 +31,7 @@ enum WebSocketState {
     Connected(),
 }
 
-impl<T: Io + 'static> ServerProto<T> for WebSocket {
+impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for WebSocket {
     type Request = Request;
     type Response = Response;
     type Transport = Framed<T, WebSocketCodec>;
@@ -53,11 +56,11 @@ impl WebSocketCodec {
     }
 }
 
-impl Codec for WebSocketCodec {
-    type In = Request;
-    type Out = Response;
+impl Decoder for WebSocketCodec {
+    type Item = Request;
+    type Error = io::Error;
 
-    fn decode(&mut self, buf: &mut EasyBuf) -> io::Result<Option<Request>> {
+    fn decode(&mut self, buf: &mut BytesMut) -> io::Result<Option<Request>> {
         match self.state {
             WebSocketState::Http() => {
                 let req = self.http_codec.decode(buf);
@@ -79,8 +82,13 @@ impl Codec for WebSocketCodec {
             _ => ws_request::decode(buf),
         }
     }
+}
 
-    fn encode(&mut self, msg: Response, buf: &mut Vec<u8>) -> io::Result<()> {
+impl Encoder for WebSocketCodec {
+    type Item = Response;
+    type Error = io::Error;
+
+    fn encode(&mut self, msg: Response, buf: &mut BytesMut) -> io::Result<()> {
         self.state = match self.state {
             WebSocketState::Http() => {
                 return Err(io::Error::new(io::ErrorKind::Other, "pls no"));

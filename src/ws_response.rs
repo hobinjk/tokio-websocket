@@ -1,5 +1,5 @@
 use base64;
-use byteorder::{BigEndian, ByteOrder};
+use bytes::{BytesMut, BufMut, BigEndian};
 use tokio_minihttp;
 use ring::digest;
 use ws_frame::{Frame, opcode_to_u8};
@@ -33,7 +33,7 @@ mod tests {
             0x80u8 + 0x02u8, // fin bin
             0x00u8 + 0x00u8, // unmasked empty
         ];
-        let mut buf = Vec::new();
+        let mut buf = BytesMut::with_capacity(0);
         encode(frame, &mut buf);
 
         assert_eq!(buf, expected_data);
@@ -59,7 +59,7 @@ mod tests {
                                  3u8,
                                  4u8,
                                  5u8];
-        let mut buf = Vec::new();
+        let mut buf = BytesMut::with_capacity(0);
         encode(frame, &mut buf);
 
         assert_eq!(buf, expected_data);
@@ -79,7 +79,6 @@ mod tests {
             payload: payload.clone(),
         };
 
-
         let mut expected_data = vec![0x00u8 + 0x00u8, // continuation continuation
                                      0x80u8 + 0x7eu8, // masked 16 bit length
                                      0x01, // payload length = 0x01 00
@@ -90,7 +89,7 @@ mod tests {
                                      0x14];
         expected_data.extend(payload.iter());
 
-        let mut buf = Vec::new();
+        let mut buf = BytesMut::with_capacity(0);
         encode(frame, &mut buf);
 
         assert_eq!(buf, expected_data);
@@ -127,7 +126,7 @@ mod tests {
                                      0x14];
         expected_data.extend(payload.iter());
 
-        let mut buf = Vec::new();
+        let mut buf = BytesMut::with_capacity(0);
         encode(frame, &mut buf);
 
         assert_eq!(buf, expected_data);
@@ -142,7 +141,7 @@ mod tests {
         ];
         expected_data.extend(text.as_bytes());
         let ttf = new_text_frame(text, None);
-        let mut buf = Vec::new();
+        let mut buf = BytesMut::with_capacity(0);
         encode(ttf, &mut buf);
         assert_eq!(buf, expected_data);
     }
@@ -156,7 +155,7 @@ mod tests {
         ];
         let ttf = new_text_frame(text, Some(0x11121314));
         assert_eq!(ttf.clone().payload_string().unwrap(), text);
-        let mut buf = Vec::new();
+        let mut buf = BytesMut::with_capacity(128);
         encode(ttf, &mut buf);
 
         assert_eq!(buf[0], expected_start[0]);
@@ -166,11 +165,10 @@ mod tests {
 
 pub type Response = Frame;
 
-pub fn encode(msg: Response, buf: &mut Vec<u8>) {
-    let mut len = 2;
-    buf.resize(len, 0u8);
-    buf[0] = 0;
-    buf[1] = 0;
+pub fn encode(msg: Response, buf: &mut BytesMut) {
+    buf.reserve(2);
+    buf.put(0u8);
+    buf.put(0u8);
     if msg.header.is_final {
         buf[0] |= 0x80;
     }
@@ -183,20 +181,16 @@ pub fn encode(msg: Response, buf: &mut Vec<u8>) {
         buf[1] |= msg.header.payload_len as u8;
     } else if msg.header.payload_len < 65536 {
         buf[1] |= 0x7e;
-        len += 2;
-        buf.resize(len, 0u8);
-        BigEndian::write_u16(&mut buf[2..], msg.header.payload_len as u16);
+        buf.reserve(2);
+        buf.put_u16::<BigEndian>(msg.header.payload_len as u16);
     } else {
         buf[1] |= 0x7f;
-        len += 8;
-        buf.resize(len, 0u8);
-        BigEndian::write_u64(&mut buf[2..], msg.header.payload_len as u64);
+        buf.reserve(8);
+        buf.put_u64::<BigEndian>(msg.header.payload_len as u64);
     }
     if msg.header.is_masked {
-        let start = buf.len();
-        len += 4;
-        buf.resize(len, 0u8);
-        BigEndian::write_u32(&mut buf[start..], msg.header.masking_key);
+        buf.reserve(4);
+        buf.put_u32::<BigEndian>(msg.header.masking_key);
     }
     buf.extend(msg.payload);
 }
