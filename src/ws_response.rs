@@ -165,8 +165,21 @@ mod tests {
 
 pub type Response = Frame;
 
+fn response_len(msg: &Response) -> usize {
+    let mut len = 2 + msg.header.payload_len;
+    if msg.header.payload_len >= 126 && msg.header.payload_len < 65536 {
+        len += 2;
+    } else if msg.header.payload_len >= 65536 {
+        len += 8;
+    }
+
+    if msg.header.is_masked {
+        len += 4;
+    }
+    len
+}
 pub fn encode(msg: Response, buf: &mut BytesMut) {
-    buf.reserve(2);
+    buf.reserve(response_len(&msg));
     buf.put(0u8);
     buf.put(0u8);
     if msg.header.is_final {
@@ -181,18 +194,15 @@ pub fn encode(msg: Response, buf: &mut BytesMut) {
         buf[1] |= msg.header.payload_len as u8;
     } else if msg.header.payload_len < 65536 {
         buf[1] |= 0x7e;
-        buf.reserve(2);
         buf.put_u16::<BigEndian>(msg.header.payload_len as u16);
     } else {
         buf[1] |= 0x7f;
-        buf.reserve(8);
         buf.put_u64::<BigEndian>(msg.header.payload_len as u64);
     }
     if msg.header.is_masked {
-        buf.reserve(4);
         buf.put_u32::<BigEndian>(msg.header.masking_key);
     }
-    buf.extend(msg.payload);
+    buf.put_slice(msg.payload.as_slice());
 }
 
 fn hash_sha1(input: &str) -> digest::Digest {
