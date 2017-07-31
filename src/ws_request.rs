@@ -110,6 +110,70 @@ mod tests {
             assert_eq!(payload[i], req.payload[i]);
         }
     }
+
+    #[test]
+    fn afl_crash_0() {
+        let data = vec![0x12, 0xff, 0xff, 0xff, 0x7f, 0x01, 0x06, 0xff, 0x7f, 0x00];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
+    #[test]
+    fn afl_crash_1() {
+        let data = vec![0x81, 0xb1];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
+    #[test]
+    fn afl_crash_2() {
+        let data = vec![0x40, 0x91];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
+    #[test]
+    fn afl_crash_3() {
+        let data = vec![0x2a, 0xec, 0x2a, 0x2a, 0xa9];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
+    #[test]
+    fn afl_crash_4() {
+        let data = vec![0x80, 0xff, 0xf7];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
+    #[test]
+    fn afl_crash_5() {
+        let data = vec![0x59, 0xe3];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
+    #[test]
+    fn afl_crash_6() {
+        let data = vec![0x98, 0x98, 0x98, 0x98, 0xbd];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
+    #[test]
+    fn afl_crash_7() {
+        let data = vec![0x8a, 0x7e, 0x62];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
+    #[test]
+    fn afl_crash_8() {
+        let data = vec![0xf1, 0xfe, 0xd5, 0xd5, 0xfe, 0x81];
+        let mut buf = BytesMut::from(data);
+        let _ = decode(&mut buf);
+    }
+
 }
 
 #[derive(Debug)]
@@ -135,10 +199,16 @@ fn parse_header(buf: &mut BytesMut) -> io::Result<ParseResult<Header>> {
     let is_masked = buf[1] & 0x80 > 0;
     let (payload_len, buf_offset) = match buf[1] & 0x7f {
         126 => {
+            if buf.len() < 4 {
+                return Err(io::Error::new(io::ErrorKind::Other, "not enough bytes"));
+            }
             let len = BigEndian::read_u16(&buf[2..]) as usize;
             (len, 4)
         }
         127 => {
+            if buf.len() < 6 {
+                return Err(io::Error::new(io::ErrorKind::Other, "not enough bytes"));
+            }
             let len = BigEndian::read_u64(&buf[2..]) as usize;
             (len, 10)
         }
@@ -146,6 +216,9 @@ fn parse_header(buf: &mut BytesMut) -> io::Result<ParseResult<Header>> {
     };
 
     let (masking_key, buf_offset) = if is_masked {
+        if buf.len() < buf_offset + 4 {
+            return Err(io::Error::new(io::ErrorKind::Other, "not enough bytes"));
+        }
         (BigEndian::read_u32(&buf[buf_offset..]), buf_offset + 4)
     } else {
         (0, buf_offset)
